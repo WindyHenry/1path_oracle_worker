@@ -4,13 +4,11 @@ from enum import Enum
 
 import aioredis
 import httpx
-from pydantic import BaseSettings
+from pydantic import BaseSettings, Field, RedisDsn
 
 
 class Settings(BaseSettings):
-    redis_hostname: str = 'localhost'
-    redis_port: int = 6379
-    redis_db: int = 0
+    redis_dsn: RedisDsn = Field(default='redis://localhost/0:6379', env='redis_url')
 
     owlracle_api_key: str = '15534502928e4f5c913b2142c8fa82bd'
 
@@ -21,7 +19,7 @@ class Settings(BaseSettings):
 env = Settings()
 
 redis = aioredis.from_url(
-    f"redis://{env.redis_hostname}/{env.redis_db}:{env.redis_port}",
+    env.redis_dsn,
     encoding="utf-8",
     decode_responses=True,
 )
@@ -37,7 +35,7 @@ class OwlracleGasPaths(str, Enum):
         return [item.name for item in cls]
 
 
-async def get_estimated_fee(url):
+async def get_estimated_fee(url) -> float:
     async with httpx.AsyncClient() as client:
         response = await client.get(url)
         return response.json()['speeds'][0]['estimatedFee']
