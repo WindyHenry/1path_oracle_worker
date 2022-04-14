@@ -1,0 +1,10 @@
+build-latest:
+  stage: build
+  script:
+    - docker login -u "gitlab-ci-token" -p "$CI_BUILD_TOKEN" $CI_REGISTRY
+    - docker build --pull -t "$CI_REGISTRY_IMAGE:latest" --build-arg CI_COMMIT_SHA .
+    - docker push "$CI_REGISTRY_IMAGE:latest"
+  only:
+    - master
+  tags:
+    - docker
