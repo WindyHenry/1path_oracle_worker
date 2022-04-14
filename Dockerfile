@@ -24,6 +24,8 @@ RUN mkdir -p /app
 WORKDIR /app
 
 COPY app.py ./app.py
+COPY defi ./defi
+COPY settings ./settings
 COPY --from=builder /install /usr/local
 
 EXPOSE 80

@@ -1,3 +1,4 @@
 aioredis==2.0.1
 pydantic==1.9.0
 httpx==0.22.0
+web3==5.29.0
