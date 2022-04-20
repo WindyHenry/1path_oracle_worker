@@ -27,8 +27,11 @@ class OwlracleGasPaths(str, Enum):
 
 async def get_estimated_fee(url) -> float:
     async with httpx.AsyncClient() as client:
-        response = await client.get(url)
-        return response.json()['speeds'][0]['estimatedFee']
+        try:
+            response = await client.get(url)
+            return response.json()['speeds'][0]['estimatedFee']
+        except (KeyError, httpx.NetworkError, httpx.HTTPError):
+            return None
 
 
 async def get_gas() -> None:
