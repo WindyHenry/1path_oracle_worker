@@ -90,10 +90,19 @@ def get_pools():
             pair_address = contract.functions.getPair(t1['address'], t2['address']).call()
             pair_contract = web3.eth.contract(address=pair_address, abi=pair_abi)
 
+            t1_address = pair_contract.functions.token0().call()
+            t2_address = pair_contract.functions.token1().call()
+
             t1_supply, t2_supply, _ = pair_contract.functions.getReserves().call()
+
+            if t1_address != t1['address']:
+                name = f'{t2_name}/{t1_name}'
+
             chain_result.append({
                 'protocol_name': protocol_name,
                 'pair_name': name,
+                'token_0': t1_address,
+                'token_1': t2_address,
                 'token_0_supply': t1_supply,
                 'token_1_supply': t2_supply
             })
