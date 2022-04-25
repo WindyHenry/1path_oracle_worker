@@ -1,5 +1,6 @@
 import asyncio
 import json
+from datetime import datetime
 from enum import Enum
 
 import aioredis
@@ -29,17 +30,32 @@ async def get_estimated_fee(url) -> float:
     async with httpx.AsyncClient() as client:
         try:
             response = await client.get(url)
-            return response.json()['speeds'][0]['estimatedFee']
-        except (KeyError, httpx.NetworkError, httpx.HTTPError):
+            return {
+                'value': response.json()['speeds'][0]['estimatedFee'],
+                'dateUpdated': datetime.now().isoformat(),
+            }
+        except (KeyError, httpx.NetworkError, httpx.HTTPError) as e:
+            print(f'Failed to get gas ({url}): {e}')
             return None
 
 
 async def get_gas() -> None:
     tasks = [asyncio.create_task(get_estimated_fee(path.value)) for path in OwlracleGasPaths]
     estimated_fee_results = await asyncio.gather(*tasks)
-    data = dict(zip(OwlracleGasPaths.names(), estimated_fee_results))
+    new_gas = dict(zip(OwlracleGasPaths.names(), estimated_fee_results))
+    old_gas = await redis.get('gas')
 
-    await redis.set('gas', json.dumps(data))
+    if old_gas:
+        try:
+            old_gas = json.loads(old_gas)
+            old_values = [x for x in old_gas if new_gas.get(x) is None or new_gas.get(x, {}).get('value')]
+            for key in old_values:
+                new_gas[key] = old_gas[key]
+
+        except Exception as e:
+            print(f'Failed to save gas: {e}')
+
+    await redis.set('gas', json.dumps(new_gas))
 
 
 async def get_gas_scheduler() -> None:
@@ -51,7 +67,28 @@ async def get_gas_scheduler() -> None:
 
 
 async def get_and_store_pools() -> None:
-    pools = get_pools()
+    new_pools = get_pools()
+
+    old_pools = await redis.get('pools')
+
+    if not old_pools:
+        pools = new_pools
+
+    else:
+        try:
+            old_pools = json.loads(old_pools)
+
+        except Exception:
+            pass
+
+        for chain_name, old_chain_pairs in old_pools.items():
+            old_chain_pairs_dict = dict((item['pair_name'], item) for item in old_chain_pairs)
+            new_chain_pairs = dict((item['pair_name'], item) for item in new_pools[chain_name])
+
+            not_updated = [item for name, item in old_chain_pairs_dict.items() if name not in new_chain_pairs]
+            new_pools[chain_name] += not_updated
+
+        pools = new_pools
 
     await redis.set('pools', json.dumps(pools))
 

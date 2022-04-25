@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 from itertools import combinations
 
 from settings.env import env
@@ -82,29 +83,37 @@ def get_pools():
 
         pairs = combinations(chain['tokens'], 2)
         for pair in pairs:
-            t1, t2 = pair
-            t1_name = t1['name']
-            t2_name = t2['name']
-            name = f'{t1_name}/{t2_name}'
+            try:
+                t1, t2 = pair
+                t1_name = t1['name']
+                t2_name = t2['name']
+                name = f'{t1_name}/{t2_name}'
 
-            pair_address = contract.functions.getPair(t1['address'], t2['address']).call()
-            pair_contract = web3.eth.contract(address=pair_address, abi=pair_abi)
+                pair_address = contract.functions.getPair(t1['address'], t2['address']).call()
+                pair_contract = web3.eth.contract(address=pair_address, abi=pair_abi)
 
-            t1_address = pair_contract.functions.token0().call()
-            t2_address = pair_contract.functions.token1().call()
+                t1_address = pair_contract.functions.token0().call()
+                t2_address = pair_contract.functions.token1().call()
 
-            t1_supply, t2_supply, _ = pair_contract.functions.getReserves().call()
+                now = datetime.now()
 
-            if t1_address != t1['address']:
-                name = f'{t2_name}/{t1_name}'
+                t1_supply, t2_supply, _ = pair_contract.functions.getReserves().call()
 
-            chain_result.append({
-                'protocol_name': protocol_name,
-                'pair_name': name,
-                'token_0': t1_address,
-                'token_1': t2_address,
-                'token_0_supply': t1_supply,
-                'token_1_supply': t2_supply
-            })
+                if t1_address != t1['address']:
+                    name = f'{t2_name}/{t1_name}'
+
+                chain_result.append({
+                    'protocol_name': protocol_name,
+                    'pair_name': name,
+                    'token_0': t1_address,
+                    'token_1': t2_address,
+                    'token_0_supply': t1_supply,
+                    'token_1_supply': t2_supply,
+                    'date_updated': now.isoformat()
+                })
+
+            except Exception as e:
+                # do not add pair to chain list if cannot get info
+                print(f'Failed to update pair {name} on {chain_name}: {e}')
 
     return response
