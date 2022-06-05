@@ -80,13 +80,17 @@ async def get_and_store_pools() -> None:
 
         except Exception:
             pass
+        for pool_type in ["swap_pools", "bridge_pools"]:
+            for chain_name, old_chain_pairs in old_pools[pool_type].items():
+                if pool_type == "swap_pools":
+                    key_name = 'pair_name'
+                else:
+                    key_name = 'token_name'
+                old_chain_pairs_dict = dict((item[key_name], item) for item in old_chain_pairs)
+                new_chain_pairs = dict((item[key_name], item) for item in new_pools[pool_type][chain_name])
 
-        for chain_name, old_chain_pairs in old_pools.items():
-            old_chain_pairs_dict = dict((item['pair_name'], item) for item in old_chain_pairs)
-            new_chain_pairs = dict((item['pair_name'], item) for item in new_pools[chain_name])
-
-            not_updated = [item for name, item in old_chain_pairs_dict.items() if name not in new_chain_pairs]
-            new_pools[chain_name] += not_updated
+                not_updated = [item for name, item in old_chain_pairs_dict.items() if name not in new_chain_pairs]
+                new_pools[pool_type][chain_name] += not_updated
 
         pools = new_pools
 

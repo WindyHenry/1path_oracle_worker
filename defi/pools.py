@@ -27,6 +27,10 @@ with open('./defi/uniswap_factory.json') as f:
 with open('./defi/uniswap_pair.json') as f:
     uniswap_v2_pair_abi = json.load(f)
 
+# multichain pool addresses
+with open('./defi/multichain_pools.json') as f:
+    multichain_pools = json.load(f)
+
 uniswap_v2_factory_address = '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f'
 uniswap_v2_factory_contract = PROVIDERS['ethereum'].eth.contract(
     address=uniswap_v2_factory_address, abi=uniswap_v2_factory_abi
@@ -54,16 +58,26 @@ PAIRS = {
     'quickswap': uniswap_v2_pair_abi,
 }
 
+minABI = [
+    {
+        'constant': True,
+        'inputs': [{'name': "_owner", 'type': "address"}],
+        'name': "balanceOf",
+        'outputs': [{'name': "balance", 'type': "uint256"}],
+        'type': "function",
+    },
+]
+
 
 def get_pools():
-    response = {}
+    response = {"swap_pools": {}, "bridge_pools": {}}
 
     for chain in chain_token_list:
         chain_name = chain['chain']
         protocol_name = chain['protocolName']
 
         chain_result = []
-        response[chain_name] = chain_result
+        response["swap_pools"][chain_name] = chain_result
 
         web3 = PROVIDERS.get(chain_name, None)
         contract = CONTRACTS.get(protocol_name, None)
@@ -116,4 +130,34 @@ def get_pools():
                 # do not add pair to chain list if cannot get info
                 print(f'Failed to update pair {name} on {chain_name}: {e}')
 
+    # multichain pools
+    for chain in multichain_pools:
+        protocol_name = chain['protocolName']
+        chain_name = chain['chain']
+        chain_result = []
+        temp_chain_token_info = {}
+        for chain_tokens in chain_token_list:
+            if chain_tokens['chain'] == chain_name:
+                temp_chain_token_info = chain_tokens['tokens']
+        for bridge_token_info in chain['tokens']:
+            token_result = {}
+            for i in temp_chain_token_info:
+                if i['name'] == bridge_token_info['name']:
+                    token_address = i['address']
+                name = bridge_token_info['name']
+            try:
+                contract = PROVIDERS[chain_name].eth.contract(address=token_address, abi=minABI)
+                token_balance = contract.functions.balanceOf(bridge_token_info['address']).call()
+                now = datetime.now()
+
+                token_result['protocol_name'] = protocol_name
+                token_result['token_name'] = name
+                token_result['token_address'] = token_address
+                token_result['token_supply'] = token_balance
+                token_result['date_updated'] = now.isoformat()
+                chain_result.append(token_result)
+            except Exception as e:
+                # do not add pair to chain list if cannot get info
+                print(f'Failed to update {protocol_name} pool info of {name} on {chain_name}: {e}')
+        response["bridge_pools"][chain_name] = chain_result
     return response
