@@ -121,6 +121,7 @@ def get_pools():
                     'pair_name': name,
                     'token_0': t1_address,
                     'token_1': t2_address,
+                    'pair_address': pair_address,
                     'token_0_supply': t1_supply,
                     'token_1_supply': t2_supply,
                     'date_updated': now.isoformat()
