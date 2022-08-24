@@ -48,7 +48,7 @@ async def get_gas() -> None:
     if old_gas:
         try:
             old_gas = json.loads(old_gas)
-            old_values = [x for x in old_gas if new_gas.get(x) is None or new_gas.get(x, {}).get('value')]
+            old_values = [x for x in old_gas if new_gas.get(x) is None or not new_gas.get(x, {}).get('value')]
             for key in old_values:
                 new_gas[key] = old_gas[key]
 
