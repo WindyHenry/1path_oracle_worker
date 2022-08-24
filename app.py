@@ -17,9 +17,9 @@ redis = aioredis.from_url(
 
 
 class OwlracleGasPaths(str, Enum):
-    bsc: str = f'https://owlracle.info/bsc/gas?accept=90&apikey={env.owlracle_api_key}'
-    ethereum: str = f'https://owlracle.info/eth/gas?accept=90&apikey={env.owlracle_api_key}'
-    polygon: str = f'https://owlracle.info/poly/gas?accept=90&apikey={env.owlracle_api_key}'
+    bsc: str = f'https://api.owlracle.info/v3/bsc/gas?accept=90&apikey={env.owlracle_api_key}'
+    ethereum: str = f'https://api.owlracle.info/v3/eth/gas?accept=90&apikey={env.owlracle_api_key}'
+    polygon: str = f'https://api.owlracle.info/v3/poly/gas?accept=90&apikey={env.owlracle_api_key}'
 
     @classmethod
     def names(cls):
