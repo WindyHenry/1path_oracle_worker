@@ -33,6 +33,9 @@ GET_GAS_DELAY=120
 # Period in seconds to refresh pools info
 GET_POOLS_DELAY=60
 
+# Period in seconds to refresh pools info
+GET_QUOTES_DELAY=60
+
 ```
 
 ### Add service to docker-compose:
