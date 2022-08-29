@@ -12,6 +12,7 @@ class Settings(BaseSettings):
 
     get_gas_delay: float = 120
     get_pools_delay: float = 60
+    get_quotes_delay: float = 60
 
 
 env = Settings()

@@ -8,6 +8,7 @@ import httpx
 
 from defi.pools import get_pools
 from settings.env import env
+from pycoingecko import CoinGeckoAPI
 
 redis = aioredis.from_url(
     env.redis_dsn,
@@ -26,7 +27,7 @@ class OwlracleGasPaths(str, Enum):
         return [item.name for item in cls]
 
 
-async def get_estimated_fee(url) -> float:
+async def get_estimated_fee(url):
     async with httpx.AsyncClient() as client:
         try:
             response = await client.get(url)
@@ -58,11 +59,41 @@ async def get_gas() -> None:
     await redis.set('gas', json.dumps(new_gas))
 
 
+async def collect_quotes_coingecko():
+    cg = CoinGeckoAPI()
+    ids_q = ['usd-coin', 'dai', 'ethereum', 'tether', 'wrapped-bitcoin']
+    temp_quotes = cg.get_price(ids=ids_q, vs_currencies='usd')
+    quotes_output = [
+        {"name": str('DAI'), "value": temp_quotes['dai']['usd']},
+        {"name": str('USDC'), "value": temp_quotes['usd-coin']['usd']},
+        {"name": str('USDT'), "value": temp_quotes['tether']['usd']},
+        {"name": str('WETH'), "value": temp_quotes['ethereum']['usd']},
+        {"name": str('WBTC'), "value": temp_quotes['wrapped-bitcoin']['usd']}
+    ]
+    return quotes_output
+
+
+async def get_quotes() -> None:
+    task = asyncio.create_task(collect_quotes_coingecko())
+    new_quotes = await asyncio.gather(task)
+    old_quotes = await redis.get('quotes')
+
+    await redis.set('quotes', json.dumps(new_quotes[0]))
+
+
 async def get_gas_scheduler() -> None:
     while True:
         await asyncio.gather(
             get_gas(),
             asyncio.sleep(env.get_gas_delay),
+        )
+
+
+async def get_quotes_scheduler() -> None:
+    while True:
+        await asyncio.gather(
+            get_quotes(),
+            asyncio.sleep(env.get_quotes_delay),
         )
 
 
@@ -107,7 +138,7 @@ async def get_pools_scheduler() -> None:
 
 async def main():
     while True:
-        await asyncio.gather(get_gas_scheduler(), get_pools_scheduler())
+        await asyncio.gather(get_gas_scheduler(), get_pools_scheduler(), get_quotes_scheduler())
 
 
 if __name__ == "__main__":
