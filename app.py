@@ -5,10 +5,10 @@ from enum import Enum
 
 import aioredis
 import httpx
+from pycoingecko import CoinGeckoAPI
 
 from defi.pools import get_pools
 from settings.env import env
-from pycoingecko import CoinGeckoAPI
 
 redis = aioredis.from_url(
     env.redis_dsn,
@@ -63,20 +63,28 @@ async def collect_quotes_coingecko():
     cg = CoinGeckoAPI()
     ids_q = ['usd-coin', 'dai', 'ethereum', 'tether', 'wrapped-bitcoin']
     temp_quotes = cg.get_price(ids=ids_q, vs_currencies='usd')
-    quotes_output = [
-        {"name": str('DAI'), "value": temp_quotes['dai']['usd']},
-        {"name": str('USDC'), "value": temp_quotes['usd-coin']['usd']},
-        {"name": str('USDT'), "value": temp_quotes['tether']['usd']},
-        {"name": str('WETH'), "value": temp_quotes['ethereum']['usd']},
-        {"name": str('WBTC'), "value": temp_quotes['wrapped-bitcoin']['usd']}
-    ]
+    quotes_output = [{
+        "name": 'DAI',
+        "value": temp_quotes['dai']['usd']
+    }, {
+        "name": 'USDC',
+        "value": temp_quotes['usd-coin']['usd']
+    }, {
+        "name": 'USDT',
+        "value": temp_quotes['tether']['usd']
+    }, {
+        "name": 'WETH',
+        "value": temp_quotes['ethereum']['usd']
+    }, {
+        "name": 'WBTC',
+        "value": temp_quotes['wrapped-bitcoin']['usd']
+    }]
     return quotes_output
 
 
 async def get_quotes() -> None:
     task = asyncio.create_task(collect_quotes_coingecko())
     new_quotes = await asyncio.gather(task)
-    old_quotes = await redis.get('quotes')
 
     await redis.set('quotes', json.dumps(new_quotes[0]))
 
