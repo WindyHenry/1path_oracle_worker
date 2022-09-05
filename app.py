@@ -16,6 +16,23 @@ redis = aioredis.from_url(
     decode_responses=True,
 )
 
+cg = CoinGeckoAPI()
+
+
+class CoinGeckoTokens(str, Enum):
+    ETH = 'ethereum'
+    WETH = 'weth'
+    WBTC = 'wrapped-bitcoin'
+    DAI = 'dai'
+    USDT = 'tether'
+    USDC = 'usd-coin'
+    MATIC = 'matic-network'
+    BNB = 'binancecoin'
+
+    @classmethod
+    def values_list(cls):
+        return [e.value for e in cls]
+
 
 class OwlracleGasPaths(str, Enum):
     bsc: str = f'https://api.owlracle.info/v3/bsc/gas?accept=90&apikey={env.owlracle_api_key}'
@@ -59,53 +76,16 @@ async def get_gas() -> None:
     await redis.set('gas', json.dumps(new_gas))
 
 
-async def collect_quotes_coingecko():
-    cg = CoinGeckoAPI()
-    ids_q = ['usd-coin', 'dai', 'ethereum', 'tether', 'wrapped-bitcoin']
-    temp_quotes = cg.get_price(ids=ids_q, vs_currencies='usd')
-    quotes_output = [{
-        "name": 'DAI',
-        "value": temp_quotes['dai']['usd']
-    }, {
-        "name": 'USDC',
-        "value": temp_quotes['usd-coin']['usd']
-    }, {
-        "name": 'USDT',
-        "value": temp_quotes['tether']['usd']
-    }, {
-        "name": 'WETH',
-        "value": temp_quotes['ethereum']['usd']
-    }, {
-        "name": 'WBTC',
-        "value": temp_quotes['wrapped-bitcoin']['usd']
-    }]
-    return quotes_output
+async def get_and_store_quotes() -> None:
 
+    quotes_response: dict = cg.get_price(ids=CoinGeckoTokens.values_list(), vs_currencies='usd')
+    quotes_output = [{'name': CoinGeckoTokens(k).name, 'value': v['usd']} for k, v in quotes_response.items()]
 
-async def get_quotes() -> None:
-    task = asyncio.create_task(collect_quotes_coingecko())
-    new_quotes = await asyncio.gather(task)
-
-    await redis.set('quotes', json.dumps(new_quotes[0]))
-
-
-async def get_gas_scheduler() -> None:
-    while True:
-        await asyncio.gather(
-            get_gas(),
-            asyncio.sleep(env.get_gas_delay),
-        )
-
-
-async def get_quotes_scheduler() -> None:
-    while True:
-        await asyncio.gather(
-            get_quotes(),
-            asyncio.sleep(env.get_quotes_delay),
-        )
+    await redis.set('quotes', json.dumps(quotes_output))
 
 
 async def get_and_store_pools() -> None:
+
     new_pools = get_pools()
 
     old_pools = await redis.get('pools')
@@ -134,6 +114,22 @@ async def get_and_store_pools() -> None:
         pools = new_pools
 
     await redis.set('pools', json.dumps(pools))
+
+
+async def get_gas_scheduler() -> None:
+    while True:
+        await asyncio.gather(
+            get_gas(),
+            asyncio.sleep(env.get_gas_delay),
+        )
+
+
+async def get_quotes_scheduler() -> None:
+    while True:
+        await asyncio.gather(
+            get_and_store_quotes(),
+            asyncio.sleep(env.get_quotes_delay),
+        )
 
 
 async def get_pools_scheduler() -> None:
