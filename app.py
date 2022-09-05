@@ -79,7 +79,7 @@ async def get_gas() -> None:
 async def get_and_store_quotes() -> None:
 
     quotes_response: dict = cg.get_price(ids=CoinGeckoTokens.values_list(), vs_currencies='usd')
-    quotes_output = [{'name': CoinGeckoTokens(k).name, 'value': v['usd']} for k, v in quotes_response.items()]
+    quotes_output = [{'token_name': CoinGeckoTokens(k).name, 'value': v['usd']} for k, v in quotes_response.items()]
 
     await redis.set('quotes', json.dumps(quotes_output))
 
