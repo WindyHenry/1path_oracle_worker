@@ -81,6 +81,8 @@ async def get_and_store_quotes() -> None:
     quotes_response: dict = cg.get_price(ids=CoinGeckoTokens.values_list(), vs_currencies='usd')
     quotes_output = [{'token_name': CoinGeckoTokens(k).name, 'value': v['usd']} for k, v in quotes_response.items()]
 
+    print(quotes_output)
+
     await redis.set('quotes', json.dumps(quotes_output))
 
 
@@ -142,7 +144,11 @@ async def get_pools_scheduler() -> None:
 
 async def main():
     while True:
-        await asyncio.gather(get_gas_scheduler(), get_pools_scheduler(), get_quotes_scheduler())
+        await asyncio.gather(
+            get_gas_scheduler(),
+            get_pools_scheduler(),
+            get_quotes_scheduler(),
+        )
 
 
 if __name__ == "__main__":
