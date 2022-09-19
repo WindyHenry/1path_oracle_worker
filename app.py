@@ -50,7 +50,7 @@ async def get_estimated_fee(url):
             response = await client.get(url)
             return {
                 'value': response.json()['speeds'][0]['estimatedFee'],
-                'dateUpdated': datetime.now().isoformat(),
+                'date_updated': datetime.now().isoformat(),
             }
         except (KeyError, httpx.NetworkError, httpx.HTTPError) as e:
             print(f'Failed to get gas ({url}): {e}')
@@ -79,9 +79,12 @@ async def get_gas() -> None:
 async def get_and_store_quotes() -> None:
 
     quotes_response: dict = cg.get_price(ids=CoinGeckoTokens.values_list(), vs_currencies='usd')
-    quotes_output = [{'token_name': CoinGeckoTokens(k).name, 'value': v['usd']} for k, v in quotes_response.items()]
 
-    print(quotes_output)
+    quotes_output = [{
+        'token_name': CoinGeckoTokens(k).name,
+        'value': v['usd'],
+        'date_updated': datetime.now().isoformat(),
+    } for k, v in quotes_response.items()]
 
     await redis.set('quotes', json.dumps(quotes_output))
 
