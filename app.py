@@ -33,7 +33,6 @@ async def get_estimated_fee(url):
     async with httpx.AsyncClient() as client:
         try:
             response = await client.get(url)
-            print(response.json()['speeds'][0])
             for item in quotes[0]:
                 if url.split('/')[-2] == 'bsc' and item['chain'] == 'bsc':
                     return {
