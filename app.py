@@ -28,13 +28,24 @@ class OwlracleGasPaths(str, Enum):
 
 
 async def get_estimated_fee(url):
+    task = asyncio.create_task(collect_quotes_for_gas_coingecko())
+    quotes = await asyncio.gather(task)
     async with httpx.AsyncClient() as client:
         try:
             response = await client.get(url)
-            return {
-                'value': response.json()['speeds'][0]['estimatedFee'],
-                'dateUpdated': datetime.now().isoformat(),
-            }
+            for item in quotes[0]:
+                if url.split('/')[-2] == 'bsc' and item['chain'] == 'bsc':
+                    return {
+                    'gwei': response.json()['speeds'][0]['gasPrice'],
+                    'tokenPrice': item['value'],
+                    'dateUpdated': datetime.now().isoformat(),
+                    }
+                elif url.split('/')[-2] == item['chain']:
+                    return {
+                    'gwei': response.json()['speeds'][0]['baseFee'],
+                    'tokenPrice': item['value'],
+                    'dateUpdated': datetime.now().isoformat(),
+                    }
         except (KeyError, httpx.NetworkError, httpx.HTTPError) as e:
             print(f'Failed to get gas ({url}): {e}')
             return None
@@ -71,6 +82,18 @@ async def collect_quotes_coingecko():
         {"name": str('WBTC'), "value": temp_quotes['wrapped-bitcoin']['usd']}
     ]
     return quotes_output
+
+
+async def collect_quotes_for_gas_coingecko():
+    cg = CoinGeckoAPI()
+    ids_q = ['ethereum', 'matic-network', 'binancecoin']
+    temp_quotes = cg.get_price(ids=ids_q, vs_currencies='usd')
+    quotes_for_gas_output = [
+        {"name": str('ETH'), "value": temp_quotes['ethereum']['usd'], "chain": str('eth')},
+        {"name": str('MATIC'), "value": temp_quotes['matic-network']['usd'], "chain": str('poly')},
+        {"name": str('BNB'), "value": temp_quotes['binancecoin']['usd'], "chain": str('bsc')}
+    ]
+    return quotes_for_gas_output
 
 
 async def get_quotes() -> None:
