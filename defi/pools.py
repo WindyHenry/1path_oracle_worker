@@ -30,6 +30,10 @@ with open('./defi/uniswap_pair.json') as f:
 # multichain pool addresses
 with open('./defi/multichain_pools.json') as f:
     multichain_pools = json.load(f)
+    
+# symbiosis pool addresses
+with open('./defi/symbiosis_pools.json') as f:
+    symbiosis_pools = json.load(f)
 
 uniswap_v2_factory_address = '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f'
 uniswap_v2_factory_contract = PROVIDERS['ethereum'].eth.contract(
@@ -66,6 +70,23 @@ minABI = [
         'outputs': [{'name': "balance", 'type': "uint256"}],
         'type': "function",
     },
+]
+
+symbiosis_ABI = [
+    {
+        'constant': True,
+        'inputs': [{'name': "_owner", 'type': "address"}],
+        'name': "getTokenIndex",
+        'outputs': [{'name': "index", 'type': "uint8"}],
+        'type': "function",
+    },
+    {
+        'constant': True,
+        'inputs': [{'name': "_owner", 'type': "uint8"}],
+        'name': "getTokenBalance",
+        'outputs': [{'name': "index", 'type': "uint256"}],
+        'type': "function",
+    }
 ]
 
 
@@ -161,4 +182,44 @@ def get_pools():
                 # do not add pair to chain list if cannot get info
                 print(f'Failed to update {protocol_name} pool info of {name} on {chain_name}: {e}')
         response["bridge_pools"][chain_name] = chain_result
+     
+    # symbiosis pools
+    for chainPair in symbiosis_pools:
+
+        protocol_name = chainPair['protocolName']
+        chain_name = chainPair['chainPair']
+        chain_result_sym = []
+    
+        for token_info in chainPair['nerves']:
+            token_address = Web3.toChecksumAddress(token_info['address'])
+            token_result = {}
+
+            try:
+                
+                contract = PROVIDERS[chain_name.split('_')[0]].eth.contract(address=token_address, abi=symbiosis_ABI)
+            
+                token0address = Web3.toChecksumAddress(token_info['tokens'][0]['address'])
+                token0decimals = token_info['tokens'][0]['decimals']
+                token1address = Web3.toChecksumAddress(token_info['tokens'][1]['address'])
+                token1decimals = token_info['tokens'][1]['decimals']
+            
+                ind0 = contract.functions.getTokenIndex(token0address).call()
+                ind1 = contract.functions.getTokenIndex(token1address).call()
+            
+                token_balance0 = contract.functions.getTokenBalance(ind0).call() / (10 ** token0decimals)
+                token_balance1 = contract.functions.getTokenBalance(ind1).call() / (10 ** token1decimals)
+            
+                token_balance = token_balance0 + token_balance1            
+                now = datetime.now()
+
+                token_result['protocol_name'] = protocol_name
+                token_result['pair_address'] = token_address
+                token_result['token_supply'] = token_balance
+                token_result['date_updated'] = now.isoformat()
+                chain_result_sym.append(token_result)
+                
+            except Exception as e:
+                print(f'Failed to update {protocol_name} pool info on {chain_name}: {e}')
+        response["bridge_pools"][chain_name] = chain_result_sym
+        
     return response
