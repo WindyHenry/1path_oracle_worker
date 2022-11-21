@@ -1,0 +1,59 @@
+[
+  {
+    "chainPair": "bsc_ethereum",
+    "protocolName": "symbiosis",
+    "nerves": [
+      {
+        "address": "0xab0738320A21741f12797Ee921461C691673E276",
+        "tokens": [
+          {
+            "address": "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56",
+            "decimals": 18
+          },
+          {
+            "address": "0x2f28Add68e59733D23D5F57d94c31fb965f835D0",
+            "decimals": 6
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "chainPair": "polygon_ethereum",
+    "protocolName": "symbiosis",
+    "nerves": [
+      {
+        "address": "0xab0738320A21741f12797Ee921461C691673E276",
+        "tokens": [
+          {
+            "address": "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
+            "decimals": 6
+          },
+          {
+            "address": "0x2f28Add68e59733D23D5F57d94c31fb965f835D0",
+            "decimals": 6
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "chainPair": "polygon_bsc",
+    "protocolName": "symbiosis",
+    "nerves": [
+      {
+        "address": "0xF4BFF06E02cdF55918e0ec98082bDE1DA85d33Db",
+        "tokens": [
+          {
+            "address": "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
+            "decimals": 6
+          },
+          {
+            "address": "0xf04d3A8Eb17B832Fbebf43610e94BdC4fD5Cf2dd",
+            "decimals": 18
+          }
+        ]
+      }
+    ]
+  }
+]
