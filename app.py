@@ -44,13 +44,11 @@ class OwlracleGasPaths(str, Enum):
         return [item.name for item in cls]
 
 
-async def get_estimated_fee(url):
-    task = asyncio.create_task(collect_quotes_for_gas_coingecko())
-    quotes = await asyncio.gather(task)
+async def get_estimated_fee(url, gas_quotes):
     async with httpx.AsyncClient() as client:
         try:
             response = await client.get(url)
-            for item in quotes[0]:
+            for item in gas_quotes:
                 if url.split('/')[-2] == 'bsc' and item['chain'] == 'bsc':
                     return {
                         'gwei': response.json()['speeds'][0]['gasPrice'],
@@ -69,7 +67,8 @@ async def get_estimated_fee(url):
 
 
 async def get_gas() -> None:
-    tasks = [asyncio.create_task(get_estimated_fee(path.value)) for path in OwlracleGasPaths]
+    gas_quotes = await collect_quotes_for_gas_coingecko()
+    tasks = [asyncio.create_task(get_estimated_fee(path.value, gas_quotes)) for path in OwlracleGasPaths]
     estimated_fee_results = await asyncio.gather(*tasks)
     new_gas = dict(zip(OwlracleGasPaths.names(), estimated_fee_results))
     old_gas = await redis.get('gas')
@@ -77,13 +76,14 @@ async def get_gas() -> None:
     if old_gas:
         try:
             old_gas = json.loads(old_gas)
-            old_values = [x for x in old_gas if new_gas.get(x) is None or not new_gas.get(x, {}).get('value')]
+            old_values = [x for x in old_gas if new_gas.get(x) is None or not new_gas.get(x, {}).get('tokenPrice')]
             for key in old_values:
                 new_gas[key] = old_gas[key]
 
         except Exception as e:
             print(f'Failed to save gas: {e}')
 
+    print('setting gas')
     await redis.set('gas', json.dumps(new_gas))
 
 
@@ -177,11 +177,10 @@ async def get_pools_scheduler() -> None:
 
 async def main():
     while True:
-        await asyncio.gather(
-            get_gas_scheduler(),
-            get_pools_scheduler(),
-            get_quotes_scheduler(),
-        )
+        await asyncio.gather(get_gas_scheduler(),
+                             # get_pools_scheduler(),
+                             # get_quotes_scheduler(),
+                            )
 
 
 if __name__ == "__main__":
