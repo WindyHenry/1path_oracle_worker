@@ -177,10 +177,11 @@ async def get_pools_scheduler() -> None:
 
 async def main():
     while True:
-        await asyncio.gather(get_gas_scheduler(),
-                             # get_pools_scheduler(),
-                             # get_quotes_scheduler(),
-                            )
+        await asyncio.gather(
+            get_gas_scheduler(),
+            get_pools_scheduler(),
+            get_quotes_scheduler(),
+        )
 
 
 if __name__ == "__main__":
