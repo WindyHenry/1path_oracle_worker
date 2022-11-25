@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 from datetime import datetime
 from enum import Enum
 
@@ -9,6 +10,8 @@ from pycoingecko import CoinGeckoAPI
 
 from defi.pools import get_pools
 from settings.env import env
+
+logger = logging.getLogger(__name__)
 
 redis = aioredis.from_url(
     env.redis_dsn,
@@ -62,7 +65,7 @@ async def get_estimated_fee(url, gas_quotes):
                         'dateUpdated': datetime.now().isoformat(),
                     }
         except (KeyError, httpx.NetworkError, httpx.HTTPError) as e:
-            print(f'Failed to get gas ({url}): {e}')
+            logger.error(f'Failed to get gas ({url}): {e}')
             return None
 
 
@@ -81,9 +84,10 @@ async def get_gas() -> None:
                 new_gas[key] = old_gas[key]
 
         except Exception as e:
-            print(f'Failed to save gas: {e}')
+            logger.error(f'Failed to save gas: {e}')
 
-    print('setting gas')
+    logger.info('Setting gas...')
+
     await redis.set('gas', json.dumps(new_gas))
 
 
