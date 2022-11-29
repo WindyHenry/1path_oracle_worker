@@ -209,12 +209,15 @@ def get_pools():
                 token_balance0 = contract.functions.getTokenBalance(ind0).call() / (10 ** token0decimals)
                 token_balance1 = contract.functions.getTokenBalance(ind1).call() / (10 ** token1decimals)
             
-                token_balance = token_balance0 + token_balance1            
+                #  token_balance = token_balance0 + token_balance1            
                 now = datetime.now()
 
                 token_result['protocol_name'] = protocol_name
                 token_result['pair_address'] = token_address
-                token_result['token_supply'] = token_balance
+                token_result['token_0'] = token0address
+                token_result['token_1'] = token1address
+                token_result['token_0_supply'] = token_balance0
+                token_result['token_1_supply'] = token_balance1
                 token_result['date_updated'] = now.isoformat()
                 chain_result_sym.append(token_result)
                 
