@@ -2,12 +2,17 @@ import json
 from datetime import datetime
 from itertools import combinations
 
-from settings.env import env
+#from settings.env import env 
 from web3 import Web3
 
-ethereum_web3 = Web3(Web3.HTTPProvider(env.mainnet_http_provider_url))
-bsc_web3 = Web3(Web3.HTTPProvider(env.bsc_http_provider_url))
-polygon_web3 = Web3(Web3.HTTPProvider(env.polygon_http_provider_url))
+ethereum_web3 = Web3(Web3.HTTPProvider("https://evm:Omi7EwahghahherieHierahvie0ohdae@node2.coinchange.io/eth"))
+bsc_web3 = Web3(Web3.HTTPProvider("https://evm:Omi7EwahghahherieHierahvie0ohdae@node2.coinchange.io/bsc"))
+polygon_web3 = Web3(Web3.HTTPProvider("https://evm:Omi7EwahghahherieHierahvie0ohdae@node1.coinchange.io/polygon"))
+"""
+потом вернуть в нормальный вид
+"""
+
+
 
 PROVIDERS = {
     'ethereum': ethereum_web3,
@@ -50,16 +55,23 @@ quickswap_factory_contract = PROVIDERS['polygon'].eth.contract(
     address=quickswap_factory_address, abi=uniswap_v2_factory_abi
 )
 
+sushiswap_factory_address = "0xC0AEe478e3658e2610c5F7A4A2E1777cE9e4f2Ac"
+sushiswap_factory_contract = PROVIDERS['ethereum'].eth.contract(
+    address=sushiswap_factory_address, abi=uniswap_v2_factory_abi
+)
+
 CONTRACTS = {
     'uniswapv2': uniswap_v2_factory_contract,
     'pancakeswap': pancakeswap_factory_contract,
     'quickswap': quickswap_factory_contract,
+    'sushiswap': sushiswap_factory_contract,
 }
 
 PAIRS = {
     'uniswapv2': uniswap_v2_pair_abi,
     'pancakeswap': uniswap_v2_pair_abi,
     'quickswap': uniswap_v2_pair_abi,
+    'sushiswap': uniswap_v2_pair_abi,
 }
 
 minABI = [
@@ -95,66 +107,67 @@ def get_pools():
 
     for chain in chain_token_list:
         chain_name = chain['chain']
-        protocol_name = chain['protocolName']
-
         chain_result = []
         response["swap_pools"][chain_name] = chain_result
 
-        web3 = PROVIDERS.get(chain_name, None)
-        contract = CONTRACTS.get(protocol_name, None)
-        pair_abi = PAIRS.get(protocol_name, None)
+        for protocol_name in chain['protocolName']:
+    
+            web3 = PROVIDERS.get(chain_name, None)
+            contract = CONTRACTS.get(protocol_name, None)
+            pair_abi = PAIRS.get(protocol_name, None)
 
-        if not chain_name:
-            print(f'No web3 provider found for {chain_name}')
-            continue
-
-        if not contract:
-            print(f'No factory contract found for chain {chain_name}: {protocol_name}')
-            continue
-
-        if not pair_abi:
-            print(f'No pair ABI found for chain {chain_name}: {protocol_name}')
-            continue
-
-        pairs = combinations(chain['tokens'], 2)
-        for pair in pairs:
-            try:
-                t1, t2 = pair
-                t1_name = t1['name']
-                t2_name = t2['name']
-                name = f'{t1_name}/{t2_name}'
-
-                pair_address = contract.functions.getPair(t1['address'], t2['address']).call()
-                pair_contract = web3.eth.contract(address=pair_address, abi=pair_abi)
-
-                t1_address = pair_contract.functions.token0().call()
-                t2_address = pair_contract.functions.token1().call()
-
-                now = datetime.now()
-
-                t1_supply, t2_supply, _ = pair_contract.functions.getReserves().call()
-
-                if t1_address != t1['address']:
-                    name = f'{t2_name}/{t1_name}'
-
-                chain_result.append({
-                    'protocol_name': protocol_name,
-                    'pair_name': name,
-                    'token_0': t1_address,
-                    'token_1': t2_address,
-                    'pair_address': pair_address,
-                    'token_0_supply': t1_supply,
-                    'token_1_supply': t2_supply,
-                    'date_updated': now.isoformat()
-                })
-
-            except Exception as e:
-                # do not add pair to chain list if cannot get info
-                print(f'Failed to update pair {name} on {chain_name}: {e}')
+            if not chain_name:
+                print(f'No web3 provider found for {chain_name}')
+                continue
+    
+            if not contract:
+                print(f'No factory contract found for chain {chain_name}: {protocol_name}')
+                continue
+    
+            if not pair_abi:
+                print(f'No pair ABI found for chain {chain_name}: {protocol_name}')
+                continue
+    
+            pairs = combinations(chain['tokens'], 2)
+            for pair in pairs:
+                try:
+                    t1, t2 = pair
+                    t1_name = t1['name']
+                    t2_name = t2['name']
+                    name = f'{t1_name}/{t2_name}'
+    
+                    pair_address = contract.functions.getPair(t1['address'], t2['address']).call()
+                    pair_contract = web3.eth.contract(address=pair_address, abi=pair_abi)
+    
+                    t1_address = pair_contract.functions.token0().call()
+                    t2_address = pair_contract.functions.token1().call()
+    
+                    now = datetime.now()
+    
+                    t1_supply, t2_supply, _ = pair_contract.functions.getReserves().call()
+    
+                    if t1_address != t1['address']:
+                        name = f'{t2_name}/{t1_name}'
+    
+                    chain_result.append({
+                        'protocol_name': protocol_name,
+                        'pair_name': name,
+                        'token_0': t1_address,
+                        'token_1': t2_address,
+                        'pair_address': pair_address,
+                        'token_0_supply': t1_supply,
+                        'token_1_supply': t2_supply,
+                        'date_updated': now.isoformat()
+                    })
+    
+                except Exception as e:
+                    # do not add pair to chain list if cannot get info
+                    print(f'Failed to update pair {name} on {chain_name}: {e}')
 
     # multichain pools
     for chain in multichain_pools:
-        protocol_name = chain['protocolName']
+
+        protocol_name = chain["protocolName"]
         chain_name = chain['chain']
         chain_result = []
         temp_chain_token_info = {}
@@ -182,7 +195,7 @@ def get_pools():
                 # do not add pair to chain list if cannot get info
                 print(f'Failed to update {protocol_name} pool info of {name} on {chain_name}: {e}')
         response["bridge_pools"][chain_name] = chain_result
-     
+    
     # symbiosis pools
     for chainPair in symbiosis_pools:
 
@@ -213,6 +226,9 @@ def get_pools():
                 now = datetime.now()
 
                 token_result['protocol_name'] = protocol_name
+                
+                token_result['token_name'] = token0address
+                
                 token_result['pair_address'] = token_address
                 token_result['token_0'] = token0address
                 token_result['token_1'] = token1address
@@ -226,3 +242,4 @@ def get_pools():
         response["bridge_pools"][chain_name] = chain_result_sym
         
     return response
+
