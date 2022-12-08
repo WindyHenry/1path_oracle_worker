@@ -2,15 +2,13 @@ import json
 from datetime import datetime
 from itertools import combinations
 
-#from settings.env import env 
+from settings.env import env
 from web3 import Web3
 
-ethereum_web3 = Web3(Web3.HTTPProvider("https://evm:Omi7EwahghahherieHierahvie0ohdae@node2.coinchange.io/eth"))
-bsc_web3 = Web3(Web3.HTTPProvider("https://evm:Omi7EwahghahherieHierahvie0ohdae@node2.coinchange.io/bsc"))
-polygon_web3 = Web3(Web3.HTTPProvider("https://evm:Omi7EwahghahherieHierahvie0ohdae@node1.coinchange.io/polygon"))
-"""
-потом вернуть в нормальный вид
-"""
+ethereum_web3 = Web3(Web3.HTTPProvider(env.mainnet_http_provider_url))
+bsc_web3 = Web3(Web3.HTTPProvider(env.bsc_http_provider_url))
+polygon_web3 = Web3(Web3.HTTPProvider(env.polygon_http_provider_url))
+
 
 
 
