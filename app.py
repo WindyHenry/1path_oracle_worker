@@ -88,7 +88,8 @@ async def collect_quotes_coingecko():
         {"name": str('DOGE'), "value": temp_quotes['dogecoin']['usd']},
         {"name": str('TRX'), "value": temp_quotes['tron']['usd']},
         {"name": str('AVAX'), "value": temp_quotes['avalanche-2']['usd']},
-        {"name": str('BNB'), "value": temp_quotes['binancecoin']['usd']}
+        {"name": str('BNB'), "value": temp_quotes['binancecoin']['usd']},
+        {"name": str('WBNB'), "value": temp_quotes['binancecoin']['usd']}
     ]
     return quotes_output
 
