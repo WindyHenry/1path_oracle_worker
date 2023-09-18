@@ -72,8 +72,8 @@ async def get_gas() -> None:
 
 async def collect_quotes_coingecko():
     cg = CoinGeckoAPI()
-    ids_q = ['usd-coin', 'dai', 'ethereum', 'tether', 'wrapped-bitcoin', 'binance-usd', 'matic-network',
-             'chainlink', 'litecoin', 'dogecoin', 'tron', 'avalanche-2', 'binancecoin']
+    ids_q = ['usd-coin', 'dai', 'ethereum', 'tether', 'wrapped-bitcoin', 'binance-usd', 'matic-network','chainlink', 'litecoin',
+     'dogecoin', 'tron', 'avalanche-2', 'binancecoin', 'baby-doge-coin', 'pancakeswap-token', 'uniswap', 'wombat-exchange', 'woo-network']
     temp_quotes = cg.get_price(ids=ids_q, vs_currencies='usd')
     quotes_output = [
         {"name": str('DAI'), "value": temp_quotes['dai']['usd']},
@@ -89,7 +89,12 @@ async def collect_quotes_coingecko():
         {"name": str('TRX'), "value": temp_quotes['tron']['usd']},
         {"name": str('AVAX'), "value": temp_quotes['avalanche-2']['usd']},
         {"name": str('BNB'), "value": temp_quotes['binancecoin']['usd']},
-        {"name": str('WBNB'), "value": temp_quotes['binancecoin']['usd']}
+        {"name": str('WBNB'), "value": temp_quotes['binancecoin']['usd']},
+        {"name": str('BabyDoge'), "value": temp_quotes['baby-doge-coin']['usd']},
+        {"name": str('CAKE'), "value": temp_quotes['pancakeswap-token']['usd']},
+        {"name": str('UNI'), "value": temp_quotes['uniswap']['usd']},
+        {"name": str('WOM'), "value": temp_quotes['wombat-exchange']['usd']},
+        {"name": str('WOO'), "value": temp_quotes['woo-network']['usd']}
     ]
     return quotes_output
 
